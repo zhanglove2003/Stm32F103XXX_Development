@@ -22,6 +22,9 @@
 
 /* USER CODE BEGIN 0 */
 #include "stdio.h"
+#include "string.h"
+
+DMA_HandleTypeDef hdma_usart1_tx;
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -289,6 +292,16 @@ int fgetc(FILE *f)
   uint8_t ch = 0;
   HAL_UART_Receive(&huart1, &ch, 1, 0xFFFF);
   return ch;
+}
+
+void UART1_DMA_Transmit(uint8_t *data, uint16_t size)
+{
+  HAL_UART_Transmit_DMA(&huart1, data, size);
+}
+
+void UART1_DMA_TransmitString(const char *str)
+{
+  UART1_DMA_Transmit((uint8_t *)str, strlen(str));
 }
 /* USER CODE END 1 */
 

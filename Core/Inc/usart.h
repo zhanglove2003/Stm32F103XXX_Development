@@ -47,7 +47,8 @@ void MX_USART2_UART_Init(void);
 void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void UART1_DMA_Transmit(uint8_t *data, uint16_t size);
+void UART1_DMA_TransmitString(const char *str);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

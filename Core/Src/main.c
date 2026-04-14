@@ -1,4 +1,4 @@
-/* USER CODE BEGIN Header */
+﻿/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -27,20 +27,18 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "dth12.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-static void Show_Message(void){
-  printf("\r\n串口控制测试实验\n");
-  printf("按键1：发送字符串\"Hello World!\"\n");
-  printf("按键2：发送字符串\"STM32F103C8T6\"\n");
-}
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define AVG_SAMPLES 3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -101,30 +99,70 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t ch;
-  Show_Message();
+  int16_t temperature = 0;
+  uint16_t humidity = 0;
+  int16_t temp_sum = 0;
+  uint16_t hum_sum = 0;
+  char uart_buf[100];
+  uint8_t ret;
+  
+  DTH12_Init();
+  ret = DTH12_ReadCalibrationParams();
+  if (ret == 0)
+  {
+    printf("DTH12温湿度传感器初始化完成\r\n");
+  }
+  else
+  {
+    printf("校准参数读取失败\r\n");
+  }
+  HAL_Delay(1000);  
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  { 
-    ch=getchar();
-    printf("你输入的字符是：%c\r\n",ch);
-    /* USER CODE END WHILE */
-    /* USER CODE BEGIN 3 */
-    switch(ch)
+  {
+    temp_sum = 0;
+    hum_sum = 0;
+    
+    for (uint8_t i = 0; i < AVG_SAMPLES; i++)
     {
-      case '1':
-        printf("Hello World!\r\n");
-        break;
-      case '2':
-        printf("STM32F103C8T6\r\n");
-        break;
-      default:
-        printf("无效输入！\r\n");
-        break;
+      ret = DTH12_TriggerMeasurement();
+      if (ret == 0)
+      {
+        ret = DTH12_ReadTempData(&temperature);
+        if (ret == 0)
+        {
+          temp_sum += temperature;
+        }
+        
+        HAL_Delay(100);
+        
+        ret = DTH12_ReadHumData(&humidity);
+        if (ret == 0)
+        {
+          hum_sum += humidity;
+        }
+      }
+      
+      HAL_Delay(1000);
     }
+    
+    temperature = temp_sum / AVG_SAMPLES;
+    humidity = hum_sum / AVG_SAMPLES;
+    
+    if (humidity > 1000)
+      humidity = 1000;
+    else if (humidity < 0)
+      humidity = 0;
+    
+    
+    
+    snprintf(uart_buf, sizeof(uart_buf), "---环境参数---\r\n温度：%.1f℃\r湿度：%.1f%%\r\n", temperature / 10.0f, humidity / 10.0f);
+    printf("%s", uart_buf);
+    
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
