@@ -1,5 +1,6 @@
 --cpu Cortex-M3
 "project\startup_stm32f103xb.o"
+"project\dth12.o"
 "project\main.o"
 "project\gpio.o"
 "project\adc.o"
