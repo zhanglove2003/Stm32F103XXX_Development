@@ -26,6 +26,9 @@ typedef struct {
     uint8_t initialized;
 } DTH12_Calibration_t;
 
+extern uint8_t dht12_dma_rx_buf[3];
+extern volatile uint8_t dht12_read_complete;
+
 void DTH12_Init(void);
 uint8_t DTH12_ReadCalibrationParams(void);
 uint8_t DTH12_TriggerMeasurement(void);
@@ -36,6 +39,7 @@ uint8_t DTH12_TriggerTempMeasurement(void);
 uint8_t DTH12_TriggerHumMeasurement(void);
 uint8_t DTH12_ReadTempData(int16_t *temp);
 uint8_t DTH12_ReadHumData(uint16_t *hum);
+uint8_t DTH12_ReadHumData_DMA(uint16_t *hum);
 uint8_t DTH12_CheckCRC(uint8_t *data, uint8_t nbrOfBytes);
 
 #ifdef __cplusplus

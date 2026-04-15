@@ -51,7 +51,8 @@ uint16_t gas_concentration; // MQ2气体浓度
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+/* USER CODE BEGIN PV */
+/* USER CODE END PV */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -145,52 +146,52 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+    int16_t temperature = 0;
+    uint16_t humidity = 0;
+    int16_t temp_sum = 0;
+    uint16_t hum_sum = 0;
+    char uart_buf[128];
+    uint8_t ret;
+
     temp_sum = 0;
-  hum_sum = 0;
+    hum_sum = 0;
 
-  for (uint8_t i = 0; i < AVG_SAMPLES; i++)
-  {
-    ret = DTH12_TriggerMeasurement();
-    if (ret == 0)
+    for (uint8_t i = 0; i < AVG_SAMPLES; i++)
     {
-      ret = DTH12_ReadTempData(&temperature);
-      if (ret == 0) temp_sum += temperature;
+      ret = DTH12_TriggerMeasurement();
+      if (ret == 0)
+      {
+        ret = DTH12_ReadTempData(&temperature);
+        if (ret == 0) temp_sum += temperature;
 
-      HAL_Delay(100);
+        HAL_Delay(100);
 
-      ret = DTH12_ReadHumData(&humidity);
-      if (ret == 0) hum_sum += humidity;
+        // 使用DMA读取湿度数据
+        ret = DTH12_ReadHumData_DMA(&humidity);
+        if (ret == 0) hum_sum += humidity;
+      }
+      HAL_Delay(300);  // 这里统一延时，不乱来
     }
-    HAL_Delay(300);  // 这里统一延时，不乱来
+
+    temperature = temp_sum / AVG_SAMPLES;
+    humidity = hum_sum / AVG_SAMPLES;
+
+    if (humidity > 1000) humidity = 1000;
+    else if (humidity < 0) humidity = 0;
+
+    // 读取MQ-2传感器的可燃气体浓度
+    gas_concentration = MQ2_ReadGasConcentration();
+
+    // 串口输出
+    snprintf(uart_buf, sizeof(uart_buf), "---环境参数---\r\n温度：%.1f℃\r\n湿度：%.1f%%\r\n可燃气体浓度：%dppm\r\n", temperature / 10.0f, humidity / 10.0f, gas_concentration);
+    HAL_UART_Transmit(&huart1, (uint8_t*)uart_buf, strlen(uart_buf), 500);
+
+    HAL_Delay(1000);
+    /* USER CODE END 3 */
   }
-
-  temperature = temp_sum / AVG_SAMPLES;
-  humidity = hum_sum / AVG_SAMPLES;
-
-  if (humidity > 1000) humidity = 1000;
-  else if (humidity < 0) humidity = 0;
-
-  // 【稳定读取MQ2】手动刷新一次ADC，保证数据最新
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc_value, 1);
-  HAL_Delay(10); // 等待ADC转换完成
-  gas_concentration = MQ2_ReadGasConcentration();
-
-  // ===================== 【稳定串口输出】 =====================
-  snprintf(uart_buf, sizeof(uart_buf),
-    "---环境参数---\r\n"
-    "温度：%.1f℃\r\n"
-    "湿度：%.1f%%\r\n"
-    "可燃气体浓度：%dppm\r\n",
-    temperature / 10.0f,
-    humidity / 10.0f,
-    gas_concentration);
-
-  // 超时设为 500，足够9600波特率发送完成
-  HAL_UART_Transmit(&huart1, (uint8_t*)uart_buf, strlen(uart_buf), 500);
-
-  HAL_Delay(1000);  // 只留这一个延时！！！
-  }
-  /* USER CODE END 3 */
 }
 
 /**
@@ -240,7 +241,15 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+    // 判断是不是我们用的那个 I2C (比如 I2C1)
+    if (hi2c->Instance == I2C1)
+    {
+        // 1. 告诉主程序：数据我搬运完了！
+        dht12_read_complete = 1;
+    }
+}
 /* USER CODE END 4 */
 
 /**

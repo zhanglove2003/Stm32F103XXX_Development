@@ -4,6 +4,7 @@
 
 static DTH12_Calibration_t dth12_cal = {0};
 
+
 const uint16_t POLYNOMIAL = 0x131;
 
 void DTH12_Init(void)
@@ -15,9 +16,6 @@ void DTH12_Init(void)
     
     DTH12_ReadCalibrationParams();
     dth12_cal.initialized = 0;
-    // dth12_cal.HumA = 0;
-    // dth12_cal.HumB = 0;
-    // dth12_cal.initialized = 0;
 }
 
 uint8_t DTH12_TriggerMeasurement(void)
@@ -48,50 +46,46 @@ uint8_t DTH12_ReadTempData(int16_t *temp)
     return 0;
 }
 
-uint8_t DTH12_ReadHumData(uint16_t *hum) {
-    uint8_t read_buf[3] = {0};
-    uint16_t raw_data = 0;
-    uint16_t humidity_x10 = 0;
-    float temp_hum = 0.0f; // 定义一个浮点数变量用于中间计算
 
-    // 1. 读取数据
-    if (HAL_I2C_Master_Receive(&hi2c1, DTH12_I2C_ADDR << 1, read_buf, 3, 1000) != HAL_OK) {
-        return 1; // 读取失败
+uint8_t DTH12_Start_DMA_Read(void) {
+    // 1. 重置完成标志位
+    dht12_read_complete = 0;
+
+    // 2. 启动 I2C DMA 接收
+    if (HAL_I2C_Master_Receive_DMA(&hi2c1, DTH12_I2C_ADDR << 1, dht12_dma_rx_buf, 3) != HAL_OK) {
+        return 1; // 启动失败
     }
 
-    // 2. 组合原始数据
-    raw_data = (read_buf[0] << 8) | read_buf[1];
+    return 0; // 启动成功
+}
 
-    // 3. 屏蔽无效位 (DHT12 湿度是 14位精度)
+// 这是一个处理函数，用来从全局缓冲区提取数据
+uint8_t DTH12_Process_Data(uint16_t *hum) {
+    // 如果还没读完，直接返回
+    if (dht12_read_complete == 0) {
+        return 1;
+    }
+
+    uint16_t raw_data = 0;
+    float temp_hum = 0.0f;
+    uint16_t humidity_x10 = 0;
+
+    // 1. 组合原始数据 (从 DMA 缓冲区读取)
+    raw_data = (dht12_dma_rx_buf[0] << 8) | dht12_dma_rx_buf[1];
+
+    // 2. 屏蔽无效位
     raw_data = raw_data & 0x3FFF;
 
-    // 4. 计算湿度 (使用浮点数计算更精准)
-    // 公式：(原始数据 / 16384) * 100
+    // 3. 计算湿度 (带校准)
     temp_hum = (float)raw_data * 100.0f / 16384.0f;
+    temp_hum = temp_hum - 20.0f; // 校准偏移量
+    if (temp_hum < 0) temp_hum = 0;
 
-    // 5. 【关键步骤】手动校准偏差
-    // 你的读数偏高约 20%，这里减去 20.0 进行修正
-    // 如果减去后觉得太低，可以把 20.0 改成 15.0 或 10.0
-    temp_hum = temp_hum - 20.0f;
+    humidity_x10 = (uint16_t)(temp_hum * 10);
 
-    // 6. 防止修正后变成负数
-    if (temp_hum < 0) {
-        temp_hum = 0;
-    }
-
-    // 7. 转换为整数格式 (乘以 10 是为了保留一位小数，例如 62.5%)
-    humidity_x10 = (uint16_t)(temp_hum * 10.0f);
-
-    // 8. 限制范围 (防止溢出)
-    if (humidity_x10 > 1000) {
-        humidity_x10 = 1000;
-    }
-
-    // 9. 输出结果
     *hum = humidity_x10;
     return 0;
 }
-
 
 uint8_t DTH12_ReadData(DTH12_Data_t *data)
 {
@@ -214,3 +208,62 @@ uint8_t DTH12_CheckCRC(uint8_t *data, uint8_t nbrOfBytes)
     else
         return 0;
 }
+uint8_t dht12_dma_rx_buf[3] = {0};
+
+// 定义一个标志位，用来判断数据是否读取完成
+volatile uint8_t dht12_read_complete = 0;
+
+uint8_t DTH12_ReadHumData(uint16_t *hum)
+{
+    uint8_t read_buf[3] = {0};
+    
+    if (HAL_I2C_Master_Receive(&hi2c1, DTH12_I2C_ADDR << 1, read_buf, 3, 1000) != HAL_OK)
+    {
+        return 1;
+    }
+    
+    uint16_t hum_raw = (read_buf[0] << 8) | read_buf[1];
+    
+    if (dth12_cal.initialized)
+    {
+        *hum = (hum_raw - dth12_cal.HumB) * 600 / (dth12_cal.HumA - dth12_cal.HumB) + 300;
+    }
+    else
+    {
+        *hum = hum_raw;
+    }
+    
+    if (*hum > 1000)
+        *hum = 1000;
+    else if (*hum < 0)
+        *hum = 0;
+    
+    return 0;
+}
+
+uint8_t DTH12_ReadHumData_DMA(uint16_t *hum)
+{
+    // 启动DMA读取
+    if (DTH12_Start_DMA_Read() != 0)
+    {
+        return 1;
+    }
+    
+    // 等待读取完成
+    uint32_t timeout = 1000;
+    while (dht12_read_complete == 0 && timeout > 0)
+    {
+        HAL_Delay(1);//不延迟就会读不到湿度
+        timeout--;
+    }
+    
+    if (timeout == 0)
+    {
+        return 1;
+    }
+    
+    // 处理数据
+    return DTH12_Process_Data(hum);
+}
+
+
