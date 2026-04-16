@@ -21,6 +21,8 @@ project/main.o: ..\Core\Src\main.c ..\Core\Inc\main.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_flash_ex.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_i2c.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_pwr.h \
+  ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_spi.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_uart.h \
   ..\Core\Inc\adc.h ..\Core\Inc\dma.h ..\Core\Inc\i2c.h \
-  ..\Core\Inc\usart.h ..\Core\Inc\gpio.h ..\Core\Inc\dth12.h
+  ..\Core\Inc\spi.h ..\Core\Inc\usart.h ..\Core\Inc\gpio.h \
+  ..\Core\Inc\dth12.h ..\Core\Inc\st7735.h ..\Core\Inc\fonts.h

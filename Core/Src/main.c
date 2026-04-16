@@ -1,4 +1,4 @@
-﻿/* USER CODE BEGIN Header */
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -21,6 +21,7 @@
 #include "adc.h"
 #include "dma.h"
 #include "i2c.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -29,12 +30,14 @@
 #include "stdio.h"
 #include "dth12.h"
 #include "string.h"
+#include "st7735.h"
+#include "fonts.h"
+extern const uint8_t chinese_font[11][32];
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-/* 必加：定义两个变量 */
-uint32_t adc_value;        // ADC采样值（32位，与DMA对齐）
+/* 必加：定义变量 */
 uint16_t gas_concentration; // MQ2气体浓度
 /* USER CODE END PTD */
 
@@ -53,7 +56,6 @@ uint16_t gas_concentration; // MQ2气体浓度
 /* USER CODE BEGIN PV */
 /* USER CODE BEGIN PV */
 /* USER CODE END PV */
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -70,8 +72,9 @@ void SystemClock_Config(void);
   */
 uint16_t MQ2_ReadGasConcentration(void)
 {
-  // 使用DMA传输的adc_value变量，转换为16位
-  uint16_t adc_val = (uint16_t)adc_value;
+  HAL_ADC_Start(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, 100);
+  uint16_t adc_val = HAL_ADC_GetValue(&hadc1);
   // 将ADC值转换为可燃气体浓度
   // 这里使用一个简单的线性转换公式，实际应用中需要根据传感器特性进行校准
   // 假设ADC值范围为0-4095，对应浓度范围为0-1000ppm
@@ -117,6 +120,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_SPI1_Init();
+  ST7735_Init();
   /* USER CODE BEGIN 2 */
   int16_t temperature = 0;
   uint16_t humidity = 0;
@@ -125,7 +130,10 @@ int main(void)
   char uart_buf[128];
   uint8_t ret;
   
+ST7735_FillScreen(ST7735_BLACK);
+
   DTH12_Init();
+  
   ret = DTH12_ReadCalibrationParams();
   if (ret == 0)
   {
@@ -135,9 +143,6 @@ int main(void)
   {
     printf("校准参数读取失败\r\n");
   }
-  
-  // 启动ADC和DMA
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc_value, 1);
   
   HAL_Delay(1000);  
   /* USER CODE END 2 */
@@ -186,12 +191,38 @@ int main(void)
     gas_concentration = MQ2_ReadGasConcentration();
 
     // 串口输出
-    snprintf(uart_buf, sizeof(uart_buf), "---环境参数---\r\n温度：%.1f℃\r\n湿度：%.1f%%\r\n可燃气体浓度：%dppm\r\n", temperature / 10.0f, humidity / 10.0f, gas_concentration);
+    snprintf(uart_buf, sizeof(uart_buf), "---环境参数---\r\n温度：%.1f℃\r\n湿度：%.1f%%\r\n烟雾浓度：%dppm\r\n", temperature / 10.0f, humidity / 10.0f, gas_concentration);
     HAL_UART_Transmit(&huart1, (uint8_t*)uart_buf, strlen(uart_buf), 500);
 
+    // 显示屏输出环境参数
+    char lcd_buf[32];
+    ST7735_FillScreen(ST7735_BLACK);
+    // 标题居中显示汉字
+    ST7735_ShowChinese(32, 60, chinese_font[0], ST7735_WHITE, ST7735_BLACK);  // 环
+    ST7735_ShowChinese(48, 60, chinese_font[1], ST7735_WHITE, ST7735_BLACK);  // 境
+    ST7735_ShowChinese(64, 60, chinese_font[2], ST7735_WHITE, ST7735_BLACK);  // 参
+    ST7735_ShowChinese(80, 60, chinese_font[3], ST7735_WHITE, ST7735_BLACK);  // 数
+    // 温度
+    ST7735_ShowChinese(0, 40, chinese_font[4], ST7735_WHITE, ST7735_BLACK);  // 温
+    ST7735_ShowChinese(16, 40, chinese_font[6], ST7735_WHITE, ST7735_BLACK); // 度
+    snprintf(lcd_buf, sizeof(lcd_buf), ":%.1fC", temperature / 10.0f);
+    ST7735_DrawString(32, 40, lcd_buf, ST7735_WHITE, ST7735_BLACK, &Font_7x10);
+    // 湿度
+    ST7735_ShowChinese(0, 20, chinese_font[5], ST7735_WHITE, ST7735_BLACK);  // 湿
+    ST7735_ShowChinese(16, 20, chinese_font[6], ST7735_WHITE, ST7735_BLACK); // 度
+    snprintf(lcd_buf, sizeof(lcd_buf), ":%.1f%%", humidity / 10.0f);
+    ST7735_DrawString(32, 20, lcd_buf, ST7735_WHITE, ST7735_BLACK, &Font_7x10);
+    // 烟雾浓度
+    ST7735_ShowChinese(0, 0, chinese_font[7], ST7735_WHITE, ST7735_BLACK);  // 烟
+    ST7735_ShowChinese(16, 0, chinese_font[8], ST7735_WHITE, ST7735_BLACK); // 雾
+    ST7735_ShowChinese(32, 0, chinese_font[9], ST7735_WHITE, ST7735_BLACK); // 浓
+    ST7735_ShowChinese(48, 0, chinese_font[10], ST7735_WHITE, ST7735_BLACK); // 度
+    snprintf(lcd_buf, sizeof(lcd_buf), ":%dppm", gas_concentration);
+    ST7735_DrawString(64, 0, lcd_buf, ST7735_WHITE, ST7735_BLACK, &Font_7x10);
+
     HAL_Delay(1000);
-    /* USER CODE END 3 */
   }
+  /* USER CODE END 3 */
 }
 
 /**
