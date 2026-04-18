@@ -1,0 +1,30 @@
+﻿# Keil 编译输出
+*.o
+*.d
+*.crf
+*.lst
+*.map
+*.dep
+*.axf
+*.hex
+*.bin
+*.htm
+*.lnp
+
+# Keil 个人配置
+*.uvoptx
+*.uvguix.*
+*.scvd
+
+# 调试日志
+JLinkLog.txt
+*.log
+
+# 输出目录
+/MDK-ARM/Project/
+/Debug/
+/Release/
+
+# 系统文件
+.DS_Store
+Thumbs.db

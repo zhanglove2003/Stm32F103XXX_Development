@@ -1,0 +1,97 @@
+# 编译输出文件
+*.o
+*.d
+*.lst
+*.map
+*.elf
+*.hex
+*.bin
+*.exe
+*.axf
+*.sct
+*.crf
+*.depend
+*.dep
+*.scr
+*.lnp
+*.htm
+
+# 调试文件
+*.jlink
+*.jflash
+*.svd
+*.dbgconf
+*.launch
+*.cfg
+
+# IDE 生成文件
+## Keil MDK
+*.uvgui.*
+*.uvopt
+*.uvoptx
+*.uvguix
+*.uvbuild
+*.uvmpw
+*.uvmpw.user
+*.uvmpw.bak
+*.scvd
+*.User
+*.Admin
+*.plg
+*.bak
+*.dep
+
+## IAR EWARM
+*.ewd
+*.ewp
+*.eww
+*.ewt
+*.cspy.bat
+*.dni
+*.s35
+*.xcl
+*.icf
+*.dep
+*.jlink
+
+## STM32CubeIDE
+.cproject
+.project
+.settings/
+.metadata/
+.launches
+Debug/
+Release/
+*.launch
+
+## CLion / CMake
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.cmake
+*.ninja
+compile_commands.json
+
+## Visual Studio Code
+.vscode/
+*.code-workspace
+
+## Eclipse
+.cproject
+.project
+.settings/
+.classpath
+
+## 其他工具
+*.log
+*.swp
+*.swo
+*~
+~*
+*.orig
+*.rej
+*.bak
+*.temp
+.DS_Store
+Thumbs.db
