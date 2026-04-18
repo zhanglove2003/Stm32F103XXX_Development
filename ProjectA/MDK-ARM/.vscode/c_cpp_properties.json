@@ -3,18 +3,18 @@
         {
             "name": "Project",
             "includePath": [
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Core\\Inc",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Drivers\\STM32F1xx_HAL_Driver\\Inc",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Drivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Drivers\\CMSIS\\Include",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Core\\Inc",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Drivers\\STM32F1xx_HAL_Driver\\Inc",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Drivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Drivers\\CMSIS\\Include",
                 "D:\\stmcore\\ARM\\ARMCLANG\\include",
                 "D:\\stmcore\\ARM\\ARMCLANG\\include\\arm_linux",
                 "D:\\stmcore\\ARM\\ARMCLANG\\include\\arm_linux_compat",
                 "D:\\stmcore\\ARM\\ARMCLANG\\include\\libcxx",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\MDK-ARM",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Core\\Src",
-                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\Drivers\\STM32F1xx_HAL_Driver\\Src"
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\MDK-ARM",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Core\\Src",
+                "c:\\Users\\SuZhang\\Desktop\\Keil5NewProject\\Project\\ProjectA\\Drivers\\STM32F1xx_HAL_Driver\\Src"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

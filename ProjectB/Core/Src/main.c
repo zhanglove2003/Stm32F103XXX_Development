@@ -16,6 +16,7 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
@@ -30,7 +31,10 @@
 #include "stdlib.h"
 #include "st7735.h"
 #include "fonts.h"
+
 extern const uint8_t chinese_font[11][32];
+extern const unsigned char gImage_初始化加载[];
+extern const unsigned char gImage_环境参数[];
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,7 +53,6 @@ extern const uint8_t chinese_font[11][32];
 
 /* Private variables ---------------------------------------------------------*/
 
-/* USER CODE BEGIN PV */
 /* USER CODE BEGIN PV */
 /* USER CODE END PV */
 
@@ -96,7 +99,6 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   uint8_t rx_data[1];
@@ -105,21 +107,26 @@ int main(void)
   float current_temp = 0, current_hum = 0;
   int current_gas = 0;
   char lcd_buf[32];
-  
-  printf("Receiver Ready\r\n");
-  printf("等待数据中...\r\n");
-  
+
+  printf("System Start\r\n");
+
   ST7735_Init();
   ST7735_FillScreen(ST7735_BLACK);
-  ST7735_ShowChinese(32, 60, chinese_font[0], ST7735_WHITE, ST7735_BLACK);
-  ST7735_ShowChinese(48, 60, chinese_font[1], ST7735_WHITE, ST7735_BLACK);
-  ST7735_ShowChinese(64, 60, chinese_font[2], ST7735_WHITE, ST7735_BLACK);
-  ST7735_ShowChinese(80, 60, chinese_font[3], ST7735_WHITE, ST7735_BLACK);
-  
+
+  ST7735_DrawImage(0, 0, 80, 79, gImage_初始化加载 + 8);
+  ST7735_DrawString(84, 50, "Make", ST7735_WHITE, ST7735_BLACK, &Font_11x18);
+  ST7735_DrawString(84, 30, "By", ST7735_WHITE, ST7735_BLACK, &Font_11x18);
+  ST7735_DrawString(84, 10, "Snow", ST7735_WHITE, ST7735_BLACK, &Font_11x18);
+
+  HAL_Delay(5000);
+
   HAL_GPIO_WritePin(MD0_GPIO_Port, MD0_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(MD1_GPIO_Port, MD1_Pin, GPIO_PIN_RESET);
-  
+
   HAL_Delay(100);
+
+  printf("Ready\r\n");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,70 +141,64 @@ int main(void)
       if (rx_index < RX_BUF_SIZE - 1)
       {
         rx_buffer[rx_index++] = rx_data[0];
-        
+
         if (rx_data[0] == '\n' || rx_data[0] == '\r')
         {
           rx_buffer[rx_index] = '\0';
-          
+
           if (rx_index > 2)
           {
             float temp = 0, hum = 0;
             int gas = 0;
-            
+
             char *t_ptr = strstr((char*)rx_buffer, "T");
             char *h_ptr = strstr((char*)rx_buffer, "H");
             char *s_ptr = strstr((char*)rx_buffer, "S");
-            
+
             if (t_ptr && h_ptr)
             {
               temp = atof(t_ptr + 1);
               hum = atof(h_ptr + 1);
-              
-              printf("---环境参数---\r\n");
-              printf("温度：%.1f℃\r\n", temp);
-              printf("湿度：%.1f%%\r\n", hum);
-              
+
               if (s_ptr)
               {
                 gas = atoi(s_ptr + 1);
-                printf("气体浓度：%dppm\r\n", gas);
               }
-              printf("\r\n");
-              
+
               current_temp = temp;
               current_hum = hum;
               current_gas = gas;
-              
+
               ST7735_FillScreen(ST7735_BLACK);
-              ST7735_ShowChinese(32, 60, chinese_font[0], ST7735_WHITE, ST7735_BLACK);
-              ST7735_ShowChinese(48, 60, chinese_font[1], ST7735_WHITE, ST7735_BLACK);
-              ST7735_ShowChinese(64, 60, chinese_font[2], ST7735_WHITE, ST7735_BLACK);
-              ST7735_ShowChinese(80, 60, chinese_font[3], ST7735_WHITE, ST7735_BLACK);
-              
+              ST7735_ShowChinese(15, 60, chinese_font[0], ST7735_WHITE, ST7735_BLACK);
+              ST7735_ShowChinese(35, 60, chinese_font[1], ST7735_WHITE, ST7735_BLACK);
+              ST7735_ShowChinese(55, 60, chinese_font[2], ST7735_WHITE, ST7735_BLACK);
+              ST7735_ShowChinese(75, 60, chinese_font[3], ST7735_WHITE, ST7735_BLACK);
+
               ST7735_ShowChinese(0, 40, chinese_font[4], ST7735_WHITE, ST7735_BLACK);
               ST7735_ShowChinese(16, 40, chinese_font[6], ST7735_WHITE, ST7735_BLACK);
               snprintf(lcd_buf, sizeof(lcd_buf), ":%.1fC", temp);
               ST7735_DrawString(32, 40, lcd_buf, ST7735_WHITE, ST7735_BLACK, &Font_7x10);
-              
+
               ST7735_ShowChinese(0, 20, chinese_font[5], ST7735_WHITE, ST7735_BLACK);
               ST7735_ShowChinese(16, 20, chinese_font[6], ST7735_WHITE, ST7735_BLACK);
               snprintf(lcd_buf, sizeof(lcd_buf), ":%.1f%%", hum);
               ST7735_DrawString(32, 20, lcd_buf, ST7735_WHITE, ST7735_BLACK, &Font_7x10);
-              
+
               ST7735_ShowChinese(0, 0, chinese_font[7], ST7735_WHITE, ST7735_BLACK);
               ST7735_ShowChinese(16, 0, chinese_font[8], ST7735_WHITE, ST7735_BLACK);
               ST7735_ShowChinese(32, 0, chinese_font[9], ST7735_WHITE, ST7735_BLACK);
               ST7735_ShowChinese(48, 0, chinese_font[10], ST7735_WHITE, ST7735_BLACK);
               snprintf(lcd_buf, sizeof(lcd_buf), ":%dppm", gas);
               ST7735_DrawString(64, 0, lcd_buf, ST7735_WHITE, ST7735_BLACK, &Font_7x10);
+
+              ST7735_DrawImage(95, 20, 60, 60, gImage_环境参数 + 8);
             }
             else
             {
-              printf("---接收数据---\r\n");
-              printf("%s\r\n\r\n", rx_buffer);
             }
           }
-          
+
           rx_index = 0;
           memset(rx_buffer, 0, RX_BUF_SIZE);
         }
@@ -262,7 +263,7 @@ void SystemClock_Config(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
+  * @brief  This function executed in case of error occurrence.
   * @retval None
   */
 void Error_Handler(void)
@@ -274,10 +275,11 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
+
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
+  *         where the assert_param error error occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None

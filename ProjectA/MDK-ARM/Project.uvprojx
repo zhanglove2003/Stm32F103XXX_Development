@@ -490,6 +490,16 @@
               <FilePath>../Core/Src/usart.c</FilePath>
             </File>
             <File>
+              <FileName>esp8266.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Src/esp8266.c</FilePath>
+            </File>
+            <File>
+              <FileName>esp8266.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\esp8266.h</FilePath>
+            </File>
+            <File>
               <FileName>stm32f1xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f1xx_it.c</FilePath>
@@ -666,4 +676,3 @@
     </Layers>
   </LayerInfo>
 </Project>
-

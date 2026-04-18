@@ -21,13 +21,13 @@ void DTH12_Init(void)
 uint8_t DTH12_TriggerMeasurement(void)
 {
     uint8_t cmd[2] = {0x2C, 0x10};
-    
+
     if (HAL_I2C_Master_Transmit(&hi2c1, DTH12_I2C_ADDR << 1, cmd, 2, 1000) != HAL_OK)
     {
         return 1;
     }
-    
-    HAL_Delay(100);
+
+    HAL_Delay(2500);
     return 0;
 }
 
@@ -90,32 +90,26 @@ uint8_t DTH12_Process_Data(uint16_t *hum) {
 uint8_t DTH12_ReadData(DTH12_Data_t *data)
 {
     uint8_t read_buf[6] = {0};
-    
+
     if (HAL_I2C_Master_Receive(&hi2c1, DTH12_I2C_ADDR << 1, read_buf, 6, 1000) != HAL_OK)
     {
         data->error = 1;
         return 1;
     }
-    
+
     int16_t temp_raw = (read_buf[0] << 8) | read_buf[1];
     int16_t hum_raw = (read_buf[3] << 8) | read_buf[4];
-    
+
     data->temperature = 400 + temp_raw / 25.6;
-    
-    if (dth12_cal.initialized)
-    {
-        data->humidity = (hum_raw - dth12_cal.HumB) * 600 / (dth12_cal.HumA - dth12_cal.HumB) + 300;
-    }
-    else
-    {
-        data->humidity = hum_raw;
-    }
-    
+
+    float humidity_f = ((float)hum_raw * 100.0f / 65536.0f) * 10.0f;
+    data->humidity = (uint16_t)humidity_f;
+
     if (data->humidity > 1000)
         data->humidity = 1000;
     else if (data->humidity < 0)
         data->humidity = 0;
-    
+
     data->error = 0;
     return 0;
 }

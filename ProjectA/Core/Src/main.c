@@ -30,11 +30,13 @@
 #include "stdio.h"
 #include "dth12.h"
 #include "string.h"
+#include "esp8266.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 uint16_t gas_concentration;
+uint8_t esp8266_connected = 0;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -129,13 +131,16 @@ int main(void)
   ret = DTH12_ReadCalibrationParams();
   if (ret == 0)
   {
-    printf("DTH12温湿度传感器初始化完成\r\n");
+    printf("DTH12 OK\r\n");
   }
   else
   {
-    printf("校准参数读取失败\r\n");
+    printf("DTH12 Err\r\n");
   }
-  
+
+  printf("ESP8266: Start init...\r\n");
+  esp8266_connected = ESP8266_Init();
+
   HAL_Delay(1000);
   /* USER CODE END 2 */
 
@@ -149,35 +154,32 @@ int main(void)
     temp_sum = 0;
     hum_sum = 0;
 
-    for (uint8_t i = 0; i < AVG_SAMPLES; i++)
+    ret = DTH12_TriggerMeasurement();
+    if (ret == 0)
     {
-      ret = DTH12_TriggerMeasurement();
-      if (ret == 0)
+      DTH12_Data_t dht_data;
+      ret = DTH12_ReadData(&dht_data);
+      if (ret == 0 && dht_data.error == 0)
       {
-        ret = DTH12_ReadTempData(&temperature);
-        if (ret == 0) temp_sum += temperature;
-
-        HAL_Delay(100);
-
-        ret = DTH12_ReadHumData_DMA(&humidity);
-        if (ret == 0) hum_sum += humidity;
+        temperature = dht_data.temperature;
+        humidity = dht_data.humidity;
+        temp_sum += temperature;
+        hum_sum += humidity;
       }
-      HAL_Delay(300);
     }
-
-    temperature = temp_sum / AVG_SAMPLES;
-    humidity = hum_sum / AVG_SAMPLES;
 
     if (humidity > 1000) humidity = 1000;
     else if (humidity < 0) humidity = 0;
 
     gas_concentration = MQ2_ReadGasConcentration();
 
-    snprintf(uart_buf, sizeof(uart_buf), "---环境参数---\r\n温度：%.1f℃\r\n湿度：%.1f%%\r\n烟雾浓度：%dppm\r\n", temperature / 10.0f, humidity / 10.0f, gas_concentration);
-    HAL_UART_Transmit(&huart1, (uint8_t*)uart_buf, strlen(uart_buf), 500);
-
     snprintf(send_buf, sizeof(send_buf), "T%.1fH%.1fS%d\r\n", temperature / 10.0f, humidity / 10.0f, gas_concentration);
     HAL_UART_Transmit(&huart2, (uint8_t*)send_buf, strlen(send_buf), 500);
+
+    if(esp8266_connected)
+    {
+        ESP8266_PublishData(temperature / 10.0f, humidity / 10.0f, gas_concentration);
+    }
 
     HAL_Delay(1000);
   }
